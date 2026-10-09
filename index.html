@@ -15,6 +15,9 @@
   .conn-banner .dot{ width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0; }
   .who-row{ display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:0.78rem; color:#5B6774; }
   .who-row input{ font-family:'Inter',sans-serif; font-size:0.78rem; border:1px solid #DAD2BE; border-radius:2px; padding:4px 8px; background:#FCFAF4; color:#22303E; }
+  td.api-filled{ box-shadow: inset 0 0 0 2px #B5453D; border-radius:3px; }
+  .legend-api{ display:inline-flex; align-items:center; gap:6px; }
+  .legend-api .box{ width:16px; height:12px; border-radius:2px; box-shadow: inset 0 0 0 2px #B5453D; }
   :root{
     --paper: #F5F1E7;
     --panel: #FCFAF4;
@@ -452,6 +455,7 @@
       <thead>
         <tr>
           <th data-sort-key="name">Entreprise</th>
+          <th data-sort-key="symbol">Symbole</th>
           <th class="num" data-sort-key="price">Prix</th>
           <th class="num" data-sort-key="per">PER</th>
           <th class="num" data-sort-key="pb">P/B</th>
@@ -478,6 +482,7 @@
       <span>Décoté / solide</span>
     </div>
     <div>Note composite = moyenne pondérée des indicateurs renseignés, sur 10 (PER, FCF Yield et F-Score comptent le plus ; dividendes en pénalité seulement).</div>
+    <div class="legend-api"><span class="box"></span><span>Case encadrée en rouge = valeur remplie automatiquement par l'API (Finnhub). Les autres sont saisies à la main.</span></div>
   </div>
   <div class="status" id="statusMsg"></div>
 
@@ -678,31 +683,31 @@ const THRESH = {
 const METRIC_KEYS = ['per','pb','peg','debt','interestcov','roe','fcf','divyield','payout','fscore'];
 
 const EXAMPLE = [
-  { id: cryptoId(), name: 'Technip Energies', symbol: 'TE.PA', price: 33.32, currency: 'EUR', ticker: 'TE', per: 14.6, pb: 2.38, peg: 1.4, debt: 0, interestcov: '', roe: 18.5, fcf: 10.7, divyield: 2.9, payout: 49 , fscore: 4},
-  { id: cryptoId(), name: 'Rubis', symbol: 'RUI.PA', price: '', currency: '', ticker: 'RUI', per: 11, pb: 1, peg: '', debt: 2.02, interestcov: '', roe: 11.42, fcf: 1, divyield: 6, payout: 55 , fscore: 6},
-  { id: cryptoId(), name: 'Vallourec', symbol: 'VK.PA', price: '', currency: '', ticker: 'VK', per: 14.5, pb: 2.14, peg: '', debt: 0, interestcov: '', roe: 15.7, fcf: 6.66, divyield: 7.82, payout: 113 , fscore: 9},
-  { id: cryptoId(), name: 'Vicat', symbol: 'VCT.PA', price: '', currency: '', ticker: 'VCT', per: 11, pb: 0.95, peg: '', debt: 1.5, interestcov: '', roe: 9, fcf: 10, divyield: 3.6, payout: 40 , fscore: 9},
-  { id: cryptoId(), name: 'OPmobility', symbol: 'OPM.PA', price: '', currency: '', ticker: 'OPM', per: 8.4, pb: 1, peg: 0.6, debt: 2.19, interestcov: 27.5, roe: 11, fcf: 6, divyield: 4.09, payout: 60 , fscore: 7},
-  { id: cryptoId(), name: 'Derichebourg', symbol: 'DBG.PA', price: '', currency: '', ticker: 'DBG', per: 10, pb: 1.22, peg: 0.4, debt: 2.3, interestcov: 5.6, roe: 15, fcf: 6.3, divyield: 1.99, payout: 20 , fscore: 6},
-  { id: cryptoId(), name: 'Manitou', symbol: 'MTU.PA', price: 22.85, currency: 'EUR', ticker: 'MTU', per: 9.84, pb: 0.8, peg: 0.3, debt: 1, interestcov: '', roe: 12, fcf: 1, divyield: 4, payout: 37 , fscore: 8},
-  { id: cryptoId(), name: 'Aurubis', symbol: 'NDA.DE', price: 176.00, currency: 'EUR', ticker: 'NDA', per: 14, pb: 0.9, peg: 1.8, debt: 0.5, interestcov: 14, roe: 13, fcf: -0.3, divyield: 1.4, payout: 16 , fscore: 7},
-  { id: cryptoId(), name: 'Boliden', symbol: 'BOL.ST', price: 565.60, currency: 'SEK', ticker: 'BOL', per: 13.7, pb: 1.88, peg: 0.6, debt: 1, interestcov: 10, roe: 18, fcf: 2.45, divyield: 2.45, payout: 33.5 , fscore: 6},
-  { id: cryptoId(), name: 'Umicore', symbol: 'UMI.BR', price: 21.86, currency: 'EUR', ticker: 'UMI', per: 13.5, pb: 2.02, peg: '', debt: 1.34, interestcov: 6.9, roe: 17.7, fcf: 6, divyield: 2.23, payout: 30 , fscore: 6},
-  { id: cryptoId(), name: 'Befesa', symbol: 'BFSA.DE', price: 36.18, currency: 'EUR', ticker: 'BFSA', per: 13.7, pb: 1.62, peg: 0.5, debt: 3.8, interestcov: 2.5, roe: 9.7, fcf: 7.85, divyield: 3.26, payout: 50 , fscore: 5},
-  { id: cryptoId(), name: 'Meta Platforms', symbol: 'META', price: 520.00, currency: 'EUR', ticker: 'META', per: 18, pb: 4.9, peg: 0.4, debt: 0.56, interestcov: 105, roe: 35, fcf: -0.05, divyield: 0.37, payout: 6.63 , fscore: 8},
-  { id: cryptoId(), name: 'China Hongqiao Group', symbol: '1378.HK', price: '', currency: 'HKD', ticker: '1378.HK', per: 6.6, pb: 1.7, peg: 0.37, debt: 1.5, interestcov: 21.9, roe: 18.8, fcf: 12.4, divyield: 7, payout: 36 , fscore: 6},
-  { id: cryptoId(), name: 'FDJ United', symbol: 'FDJ.PA', price: 21.73, currency: 'EUR', per: 11.4, pb: 4.56, peg: 0.1, debt: 1.9, interestcov: 9, roe: 18, fcf: 8.9, divyield: 9.61, payout: 110 , fscore: 6},
-  { id: cryptoId(), name: 'Amazon', symbol: 'AMZN', price: 259.34, currency: 'USD', per: 22.8, pb: 5.23, peg: 0.3, debt: 1.1, interestcov: 30, roe: 21, fcf: -1.18, divyield: 0, payout: 0 , fscore: 7},
-  { id: cryptoId(), name: 'LVMH', symbol: 'MC.PA', price: 384.30, currency: 'EUR', per: 17, pb: 3.17, peg: '', debt: 0.97, interestcov: 15.3, roe: 15.8, fcf: 4, divyield: 3.46, payout: 59 , fscore: 6},
+  { id: cryptoId(), name: 'Technip Energies', symbol: 'TE', exch: 'Euronext Paris', price: 33.32, currency: 'EUR', ticker: 'TE', per: 14.6, pb: 2.38, peg: 1.4, debt: 0, interestcov: '', roe: 18.5, fcf: 10.7, divyield: 2.9, payout: 49 , fscore: 4},
+  { id: cryptoId(), name: 'Rubis', symbol: 'RUI', exch: 'Euronext Paris', price: '', currency: '', ticker: 'RUI', per: 11, pb: 1, peg: '', debt: 2.02, interestcov: '', roe: 11.42, fcf: 1, divyield: 6, payout: 55 , fscore: 6},
+  { id: cryptoId(), name: 'Vallourec', symbol: 'VK', exch: 'Euronext Paris', price: '', currency: '', ticker: 'VK', per: 14.5, pb: 2.14, peg: '', debt: 0, interestcov: '', roe: 15.7, fcf: 6.66, divyield: 7.82, payout: 113 , fscore: 9},
+  { id: cryptoId(), name: 'Vicat', symbol: 'VCT', exch: 'Euronext Paris', price: '', currency: '', ticker: 'VCT', per: 11, pb: 0.95, peg: '', debt: 1.5, interestcov: '', roe: 9, fcf: 10, divyield: 3.6, payout: 40 , fscore: 9},
+  { id: cryptoId(), name: 'OPmobility', symbol: 'OPM', exch: 'Euronext Paris', price: '', currency: '', ticker: 'OPM', per: 8.4, pb: 1, peg: 0.6, debt: 2.19, interestcov: 27.5, roe: 11, fcf: 6, divyield: 4.09, payout: 60 , fscore: 7},
+  { id: cryptoId(), name: 'Derichebourg', symbol: 'DBG', exch: 'Euronext Paris', price: '', currency: '', ticker: 'DBG', per: 10, pb: 1.22, peg: 0.4, debt: 2.3, interestcov: 5.6, roe: 15, fcf: 6.3, divyield: 1.99, payout: 20 , fscore: 6},
+  { id: cryptoId(), name: 'Manitou', symbol: 'MTU', exch: 'Euronext Paris', price: 22.85, currency: 'EUR', ticker: 'MTU', per: 9.84, pb: 0.8, peg: 0.3, debt: 1, interestcov: '', roe: 12, fcf: 1, divyield: 4, payout: 37 , fscore: 8},
+  { id: cryptoId(), name: 'Aurubis', symbol: 'NDA', exch: 'XETRA', price: 176.00, currency: 'EUR', ticker: 'NDA', per: 14, pb: 0.9, peg: 1.8, debt: 0.5, interestcov: 14, roe: 13, fcf: -0.3, divyield: 1.4, payout: 16 , fscore: 7},
+  { id: cryptoId(), name: 'Boliden', symbol: 'BOL', exch: 'Stockholm', price: 565.60, currency: 'SEK', ticker: 'BOL', per: 13.7, pb: 1.88, peg: 0.6, debt: 1, interestcov: 10, roe: 18, fcf: 2.45, divyield: 2.45, payout: 33.5 , fscore: 6},
+  { id: cryptoId(), name: 'Umicore', symbol: 'UMI', exch: 'Euronext Brussels', price: 21.86, currency: 'EUR', ticker: 'UMI', per: 13.5, pb: 2.02, peg: '', debt: 1.34, interestcov: 6.9, roe: 17.7, fcf: 6, divyield: 2.23, payout: 30 , fscore: 6},
+  { id: cryptoId(), name: 'Befesa', symbol: 'BFSA', exch: 'XETRA', price: 36.18, currency: 'EUR', ticker: 'BFSA', per: 13.7, pb: 1.62, peg: 0.5, debt: 3.8, interestcov: 2.5, roe: 9.7, fcf: 7.85, divyield: 3.26, payout: 50 , fscore: 5},
+  { id: cryptoId(), name: 'Meta Platforms', symbol: 'META', exch: 'NASDAQ', price: 520.00, currency: 'EUR', ticker: 'META', per: 18, pb: 4.9, peg: 0.4, debt: 0.56, interestcov: 105, roe: 35, fcf: -0.05, divyield: 0.37, payout: 6.63 , fscore: 8},
+  { id: cryptoId(), name: 'China Hongqiao Group', symbol: '1378', exch: 'Hong Kong', price: '', currency: 'HKD', ticker: '1378.HK', per: 6.6, pb: 1.7, peg: 0.37, debt: 1.5, interestcov: 21.9, roe: 18.8, fcf: 12.4, divyield: 7, payout: 36 , fscore: 6},
+  { id: cryptoId(), name: 'FDJ United', symbol: 'FDJ', exch: 'Euronext Paris', price: 21.73, currency: 'EUR', per: 11.4, pb: 4.56, peg: 0.1, debt: 1.9, interestcov: 9, roe: 18, fcf: 8.9, divyield: 9.61, payout: 110 , fscore: 6},
+  { id: cryptoId(), name: 'Amazon', symbol: 'AMZN', exch: 'NASDAQ', price: 259.34, currency: 'USD', per: 22.8, pb: 5.23, peg: 0.3, debt: 1.1, interestcov: 30, roe: 21, fcf: -1.18, divyield: 0, payout: 0 , fscore: 7},
+  { id: cryptoId(), name: 'LVMH', symbol: 'MC', exch: 'Euronext Paris', price: 384.30, currency: 'EUR', per: 17, pb: 3.17, peg: '', debt: 0.97, interestcov: 15.3, roe: 15.8, fcf: 4, divyield: 3.46, payout: 59 , fscore: 6},
 ];
 
 const EXAMPLE_ALU = [
-  { id: cryptoId(), name: 'Chinalco (Aluminum Corp of China / Chalco)', symbol: '2600.HK', price: 8.40, currency: 'HKD', per: 8.63, pb: 2.04, peg: 1.5, debt: 1.8, interestcov: 32.8, roe: 17.7, fcf: 9, divyield: 4, payout: 40 , fscore: 7},
-  { id: cryptoId(), name: 'China Hongqiao Group', symbol: '1378.HK', price: 34.00, currency: 'HKD', per: 6.6, pb: 1.7, peg: 0.37, debt: 1.5, interestcov: 21.9, roe: 18.8, fcf: 12.4, divyield: 7, payout: 36 , fscore: 6},
-  { id: cryptoId(), name: 'Rusal', symbol: '0486.HK', price: 2.96, currency: 'HKD', per: '', pb: 0.81, peg: '', debt: 5.02, interestcov: 2, roe: -3.97, fcf: -1.8, divyield: 0, payout: 0 , fscore: 5},
-  { id: cryptoId(), name: 'Rio Tinto', symbol: 'RIO.L', price: 7324.50, currency: 'GBX', per: 13, pb: 2.7, peg: 0.5, debt: 0.65, interestcov: 9, roe: 20, fcf: 7, divyield: 4.5, payout: 55 , fscore: 4},
-  { id: cryptoId(), name: 'Vedanta', symbol: 'VEDL.NS', price: 264.65, currency: 'INR', per: 14.8, pb: 5.16, peg: '', debt: 2.4, interestcov: 3, roe: 38.5, fcf: 6.65, divyield: 5.19, payout: 76.9 , fscore: 4},
-  { id: cryptoId(), name: 'Norsk Hydro', symbol: 'NHY.OL', price: 91.04, currency: 'NOK', per: 9.8, pb: 1.3, peg: 0.42, debt: 2.5, interestcov: 13, roe: 5.7, fcf: 4, divyield: 5.6, payout: 88 , fscore: 5},
+  { id: cryptoId(), name: 'Chinalco (Aluminum Corp of China / Chalco)', symbol: '2600', exch: 'Hong Kong', price: 8.40, currency: 'HKD', per: 8.63, pb: 2.04, peg: 1.5, debt: 1.8, interestcov: 32.8, roe: 17.7, fcf: 9, divyield: 4, payout: 40 , fscore: 7},
+  { id: cryptoId(), name: 'China Hongqiao Group', symbol: '1378', exch: 'Hong Kong', price: 34.00, currency: 'HKD', per: 6.6, pb: 1.7, peg: 0.37, debt: 1.5, interestcov: 21.9, roe: 18.8, fcf: 12.4, divyield: 7, payout: 36 , fscore: 6},
+  { id: cryptoId(), name: 'Rusal', symbol: '486', exch: 'Hong Kong', price: 2.96, currency: 'HKD', per: '', pb: 0.81, peg: '', debt: 5.02, interestcov: 2, roe: -3.97, fcf: -1.8, divyield: 0, payout: 0 , fscore: 5},
+  { id: cryptoId(), name: 'Rio Tinto', symbol: 'RIO', exch: 'London', price: 7324.50, currency: 'GBX', per: 13, pb: 2.7, peg: 0.5, debt: 0.65, interestcov: 9, roe: 20, fcf: 7, divyield: 4.5, payout: 55 , fscore: 4},
+  { id: cryptoId(), name: 'Vedanta', symbol: 'VEDL', exch: 'NSE', price: 264.65, currency: 'INR', per: 14.8, pb: 5.16, peg: '', debt: 2.4, interestcov: 3, roe: 38.5, fcf: 6.65, divyield: 5.19, payout: 76.9 , fscore: 4},
+  { id: cryptoId(), name: 'Norsk Hydro', symbol: 'NHY', exch: 'Oslo', price: 91.04, currency: 'NOK', per: 9.8, pb: 1.3, peg: 0.42, debt: 2.5, interestcov: 13, roe: 5.7, fcf: 4, divyield: 5.6, payout: 88 , fscore: 5},
 ];
 
 function cryptoId(){
@@ -791,7 +796,7 @@ let activeBoardId = null;
 const BOARDS_KEY = 'value-watchlist-boards';
 
 function blankCompany(){
-  return { id: cryptoId(), name: '', price: '', currency: '', per: '', pb: '', peg: '', debt: '', interestcov: '', roe: '', fcf: '', divyield: '', payout: '', fscore: '' };
+  return { id: cryptoId(), name: '', symbol: '', price: '', currency: '', per: '', pb: '', peg: '', debt: '', interestcov: '', roe: '', fcf: '', divyield: '', payout: '', fscore: '', _api: [] };
 }
 
 function getActiveBoard(){
@@ -916,7 +921,7 @@ function sortCompanies(list){
     let v;
     if(key === 'score'){
       v = compositeScore(c);
-    } else if(key === 'name' || key === 'ticker' || key === 'currency'){
+    } else if(key === 'name' || key === 'ticker' || key === 'currency' || key === 'symbol'){
       v = (c[key] || '').toString().toLowerCase();
     } else {
       v = c[key];
@@ -960,12 +965,17 @@ function scheduleSave(){
   saveTimer = setTimeout(saveCompanies, 500);
 }
 
+function isApi(company, key){
+  return Array.isArray(company._api) && company._api.includes(key);
+}
+
 function metricCell(company, key, label){
   const value = company[key];
   const score = metricScore(key, value);
   const color = colorForScore(score);
+  const apiCls = isApi(company, key) ? ' api-filled' : '';
   return `
-    <td class="metric-cell">
+    <td class="metric-cell${apiCls}">
       <div class="swatch" style="background:${color.bg}; color:${color.fg};">
         <input type="number" step="0.1" value="${value === undefined || value === null ? '' : value}"
           data-id="${company.id}" data-key="${key}" placeholder="—" />
@@ -982,7 +992,7 @@ function render(){
   updateSortHeaders();
 
   if(companies.length === 0){
-    tbody.innerHTML = `<tr><td colspan="14"><div class="empty">Aucune entreprise suivie. Clique sur "+ Ajouter une entreprise" pour commencer.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15"><div class="empty">Aucune entreprise suivie. Clique sur "+ Ajouter une entreprise" pour commencer.</div></td></tr>`;
     return;
   }
 
@@ -994,7 +1004,8 @@ function render(){
     return `
       <tr>
         <td class="name-cell"><input type="text" value="${escapeHtml(c.name)}" data-id="${c.id}" data-key="name" placeholder="Nom de l'entreprise" /></td>
-        <td class="price-cell">
+        <td class="ticker-cell"><input type="text" value="${escapeHtml(c.symbol)}" data-id="${c.id}" data-key="symbol" placeholder="ex: MC.PA" style="width:84px;" /></td>
+        <td class="price-cell${isApi(c,'price') ? ' api-filled' : ''}">
           <input type="number" step="0.01" value="${c.price === undefined || c.price === null ? '' : c.price}" data-id="${c.id}" data-key="price" placeholder="—" />
           <input type="text" class="price-currency" value="${escapeHtml(c.currency)}" data-id="${c.id}" data-key="currency" placeholder="EUR" />
         </td>
@@ -1060,10 +1071,14 @@ function onFieldChange(e){
   const company = companies.find(c => c.id === id);
   if(!company) return;
   let val = e.target.value;
-  if(key !== 'name' && key !== 'ticker' && key !== 'currency'){
+  if(key !== 'name' && key !== 'ticker' && key !== 'currency' && key !== 'symbol'){
     val = val === '' ? '' : parseFloat(val);
   }
   company[key] = val;
+  // A manually edited cell is no longer "API-filled" — drop its red marker
+  if(Array.isArray(company._api) && company._api.includes(key)){
+    company._api = company._api.filter(k => k !== key);
+  }
 
   // Only re-render score badge + this row's swatches without losing focus:
   // simplest robust approach — re-render fully but restore focus after.
@@ -1140,33 +1155,89 @@ document.querySelectorAll('thead th[data-sort-key]').forEach(th => {
   });
 });
 
-/* ===== FINNHUB AUTO PRICES / METRICS ===== */
+/* ===== AUTO PRICES / METRICS — Twelve Data (primary) + Finnhub (fallback) ===== */
+const TWELVEDATA_KEY = '2fbf09b2bdf245a6870debcc85c9b0df';
 const FINNHUB_KEY = 'db4db41r01qucqgmbilgdb4db41r01qucqgmbim0';
 
-async function fetchFinnhub(symbol){
+// Twelve Data exchange hints, mapped from each company's `exch` field.
+function tdExchange(exch){
+  const map = {
+    'Euronext Paris': 'Euronext',
+    'XETRA': 'XETRA',
+    'Euronext Brussels': 'Euronext',
+    'Stockholm': 'OMX',
+    'Hong Kong': 'HKEX',
+    'London': 'LSE',
+    'NSE': 'NSE',
+    'Oslo': 'OSE',
+    'NASDAQ': 'NASDAQ',
+    'NYSE': 'NYSE'
+  };
+  return map[exch] || '';
+}
+
+async function fetchTwelveData(c){
   const out = {};
+  const sym = c.symbol;
+  if(!sym) return out;
+  const exch = tdExchange(c.exch);
+  const exchParam = exch ? `&exchange=${encodeURIComponent(exch)}` : '';
   try{
-    // Quote endpoint: current price (field c)
-    const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_KEY}`);
+    // Price
+    const q = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(sym)}${exchParam}&apikey=${TWELVEDATA_KEY}`);
     if(q.ok){
       const qd = await q.json();
-      if(qd && typeof qd.c === 'number' && qd.c > 0) out.price = Math.round(qd.c * 100) / 100;
+      if(qd && qd.price && !isNaN(parseFloat(qd.price))) out.price = Math.round(parseFloat(qd.price) * 100) / 100;
     }
   } catch(e){ /* ignore */ }
   try{
-    // Basic financials: PER, P/B, ROE, dividend yield
-    const m = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${encodeURIComponent(symbol)}&metric=all&token=${FINNHUB_KEY}`);
+    // Statistics: PER, P/B, ROE, dividend yield
+    const s = await fetch(`https://api.twelvedata.com/statistics?symbol=${encodeURIComponent(sym)}${exchParam}&apikey=${TWELVEDATA_KEY}`);
+    if(s.ok){
+      const sd = await s.json();
+      const st = sd && sd.statistics ? sd.statistics : {};
+      const val = st.valuations_metrics || {};
+      const fin = st.financials || {};
+      const divs = st.dividends_and_splits || {};
+      if(val.trailing_pe && !isNaN(+val.trailing_pe)) out.per = Math.round(+val.trailing_pe * 10) / 10;
+      else if(val.forward_pe && !isNaN(+val.forward_pe)) out.per = Math.round(+val.forward_pe * 10) / 10;
+      if(val.price_to_book_mrq && !isNaN(+val.price_to_book_mrq)) out.pb = Math.round(+val.price_to_book_mrq * 100) / 100;
+      const roe = fin.return_on_equity_ttm;
+      if(roe != null && !isNaN(+roe)) out.roe = Math.round((+roe <= 1 ? +roe*100 : +roe) * 10) / 10;
+      const dy = divs.forward_annual_dividend_yield ?? divs.trailing_annual_dividend_yield;
+      if(dy != null && !isNaN(+dy)) out.divyield = Math.round((+dy <= 1 ? +dy*100 : +dy) * 100) / 100;
+    }
+  } catch(e){ /* ignore */ }
+  return out;
+}
+
+async function fetchFinnhub(c){
+  const out = {};
+  const sym = c.symbol ? (c.exch && /Paris|Brussels/.test(c.exch) ? c.symbol + '.PA'
+            : c.exch === 'XETRA' ? c.symbol + '.DE'
+            : c.exch === 'Stockholm' ? c.symbol + '.ST'
+            : c.exch === 'Hong Kong' ? (c.symbol.padStart(4,'0') + '.HK')
+            : c.exch === 'London' ? c.symbol + '.L'
+            : c.exch === 'Oslo' ? c.symbol + '.OL'
+            : c.exch === 'NSE' ? c.symbol + '.NS'
+            : c.symbol) : '';
+  if(!sym) return out;
+  try{
+    const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FINNHUB_KEY}`);
+    if(q.ok){ const qd = await q.json(); if(qd && typeof qd.c === 'number' && qd.c > 0) out.price = Math.round(qd.c*100)/100; }
+  } catch(e){ /* ignore */ }
+  try{
+    const m = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${encodeURIComponent(sym)}&metric=all&token=${FINNHUB_KEY}`);
     if(m.ok){
-      const md = await m.json();
-      const f = md && md.metric ? md.metric : {};
-      if(typeof f.peBasicExclExtraTTM === 'number') out.per = Math.round(f.peBasicExclExtraTTM * 10) / 10;
-      else if(typeof f.peTTM === 'number') out.per = Math.round(f.peTTM * 10) / 10;
-      if(typeof f.pbQuarterly === 'number') out.pb = Math.round(f.pbQuarterly * 100) / 100;
-      else if(typeof f.pbAnnual === 'number') out.pb = Math.round(f.pbAnnual * 100) / 100;
-      if(typeof f.roeTTM === 'number') out.roe = Math.round(f.roeTTM * 10) / 10;
-      else if(typeof f.roeRfy === 'number') out.roe = Math.round(f.roeRfy * 10) / 10;
-      if(typeof f.currentDividendYieldTTM === 'number') out.divyield = Math.round(f.currentDividendYieldTTM * 100) / 100;
-      else if(typeof f.dividendYieldIndicatedAnnual === 'number') out.divyield = Math.round(f.dividendYieldIndicatedAnnual * 100) / 100;
+      const md = await m.json(); const f = (md && md.metric) || {};
+      if(typeof f.peBasicExclExtraTTM === 'number') out.per = Math.round(f.peBasicExclExtraTTM*10)/10;
+      else if(typeof f.peTTM === 'number') out.per = Math.round(f.peTTM*10)/10;
+      if(typeof f.pbQuarterly === 'number') out.pb = Math.round(f.pbQuarterly*100)/100;
+      else if(typeof f.pbAnnual === 'number') out.pb = Math.round(f.pbAnnual*100)/100;
+      if(typeof f.roeTTM === 'number') out.roe = Math.round(f.roeTTM*10)/10;
+      else if(typeof f.roeRfy === 'number') out.roe = Math.round(f.roeRfy*10)/10;
+      if(typeof f.currentDividendYieldTTM === 'number') out.divyield = Math.round(f.currentDividendYieldTTM*100)/100;
+      else if(typeof f.dividendYieldIndicatedAnnual === 'number') out.divyield = Math.round(f.dividendYieldIndicatedAnnual*100)/100;
     }
   } catch(e){ /* ignore */ }
   return out;
@@ -1185,24 +1256,35 @@ async function refreshPrices(){
   }
   let done = 0, filled = 0, failed = 0;
   for(const c of targets){
-    status.textContent = `Mise à jour ${done+1}/${targets.length} (${c.name})…`;
-    const data = await fetchFinnhub(c.symbol);
-    if(Object.keys(data).length > 0){
+    done++;
+    status.textContent = `Mise à jour ${done}/${targets.length} (${c.name})…`;
+    // Twelve Data first
+    let data = await fetchTwelveData(c);
+    // Finnhub fills any field Twelve Data missed
+    const need = ['price','per','pb','roe','divyield'].some(k => data[k] === undefined);
+    if(need){
+      const fb = await fetchFinnhub(c);
+      for(const k of Object.keys(fb)){ if(data[k] === undefined) data[k] = fb[k]; }
+    }
+    const keys = Object.keys(data);
+    if(keys.length > 0){
       Object.assign(c, data);
+      const prev = Array.isArray(c._api) ? c._api : [];
+      c._api = Array.from(new Set([...prev, ...keys]));
       filled++;
     } else {
       failed++;
     }
-    done++;
-    // Respect the 60 calls/min free limit: 2 calls per company, so pace ~1.1s between companies
-    await new Promise(r => setTimeout(r, 1100));
+    // Twelve Data free tier = 8 req/min. We make up to 2 TD calls per company,
+    // so pace ~8s between companies to stay under the limit.
+    await new Promise(r => setTimeout(r, 8000));
   }
   companies = board.companies;
   refreshSortOrder();
   render();
   await saveCompanies();
   status.textContent = `Terminé : ${filled} mises à jour, ${failed} sans données (à compléter à la main).`;
-  setTimeout(() => { status.textContent = ''; }, 6000);
+  setTimeout(() => { status.textContent = ''; }, 8000);
 }
 
 document.getElementById('refreshPricesBtn').addEventListener('click', refreshPrices);
