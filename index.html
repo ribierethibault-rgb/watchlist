@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watchlist — Décote (partagée)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  .conn-banner{ display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:3px; font-size:0.82rem; margin-bottom:20px; }
+  .conn-banner.ok{ background:#E7EFE9; color:#4B7A56; border:1px solid #4B7A56; }
+  .conn-banner.warn{ background:#F7ECEA; color:#B5453D; border:1px solid #B5453D; }
+  .conn-banner .dot{ width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0; }
+  .who-row{ display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:0.78rem; color:#5B6774; }
+  .who-row input{ font-family:'Inter',sans-serif; font-size:0.78rem; border:1px solid #DAD2BE; border-radius:2px; padding:4px 8px; background:#FCFAF4; color:#22303E; }
+  :root{
+    --paper: #F5F1E7;
+    --panel: #FCFAF4;
+    --ink: #22303E;
+    --ink-soft: #5B6774;
+    --line: #DAD2BE;
+    --gold: #9C7A2E;
+    --gold-soft: #EFE3C2;
+    --red: #B5453D;
+    --amber: #B8912B;
+    --green: #4B7A56;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    padding:0;
+  }
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:40px 28px 80px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:700;
+    font-size:2rem;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:6px 0 0;
+    color:var(--ink-soft);
+    font-size:0.92rem;
+    max-width:520px;
+  }
+  .meta{
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+  }
+
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .toolbar-left{
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+  button{
+    font-family:'Inter', sans-serif;
+    font-size:0.85rem;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:var(--radius);
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    padding:9px 16px;
+    transition:opacity .15s ease;
+  }
+  button:hover{opacity:0.82;}
+  button.ghost{
+    background:transparent;
+    color:var(--ink);
+  }
+  button.small{
+    padding:4px 9px;
+    font-size:0.72rem;
+    border-radius:2px;
+  }
+  button.danger{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+  }
+  button.danger:hover{border-color:var(--red); color:var(--red);}
+
+  .table-scroll{
+    overflow-x:auto;
+    border:1px solid var(--ink);
+    background:var(--panel);
+    border-radius:var(--radius);
+  }
+  table{
+    border-collapse:collapse;
+    width:100%;
+    min-width:920px;
+  }
+  thead th{
+    text-align:left;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    padding:12px 10px;
+    border-bottom:1px solid var(--ink);
+    white-space:nowrap;
+  }
+  thead th.num{text-align:center;}
+  thead th[data-sort-key]{
+    cursor:pointer;
+    user-select:none;
+    transition:color .15s ease;
+  }
+  thead th[data-sort-key]:hover{
+    color:var(--gold);
+  }
+  thead th[data-sort-key] .arrow{
+    display:inline-block;
+    margin-left:4px;
+    font-size:0.65rem;
+    opacity:0.4;
+  }
+  thead th[data-sort-key].active .arrow{
+    opacity:1;
+    color:var(--gold);
+  }
+  tbody td{
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  .name-cell input{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:0.95rem;
+    border:none;
+    background:transparent;
+    width:100%;
+    color:var(--ink);
+  }
+  .ticker-cell input{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    border:none;
+    background:transparent;
+    width:70px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .price-cell{ text-align:center; white-space:nowrap; }
+  .price-cell input{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85rem;
+    font-weight:600;
+    border:none;
+    background:transparent;
+    text-align:center;
+    color:var(--ink);
+  }
+  .price-cell input[type="number"]{ width:64px; }
+  .price-cell input.price-currency{
+    width:42px;
+    font-size:0.72rem;
+    font-weight:500;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .name-cell input:focus, .ticker-cell input:focus, .metric-cell input:focus, .price-cell input:focus{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
+  .metric-cell{
+    text-align:center;
+    padding:6px 8px;
+  }
+  .metric-cell .swatch{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:2px;
+    padding:6px 4px;
+  }
+  .metric-cell input{
+    width:56px;
+    text-align:center;
+    border:none;
+    background:transparent;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85rem;
+    font-weight:600;
+    color:inherit;
+  }
+  .score-cell{
+    text-align:center;
+    font-family:'Source Serif 4', serif;
+  }
+  .score-badge{
+    display:inline-flex;
+    align-items:baseline;
+    gap:2px;
+    padding:6px 10px;
+    border-radius:2px;
+    font-weight:700;
+    font-size:1.05rem;
+  }
+  .score-badge span{font-size:0.68rem; font-weight:500; opacity:0.75;}
+  .del-cell{width:32px; text-align:center;}
+
+  .foot-row td{
+    padding:10px;
+  }
+
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:14px;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    flex-wrap:wrap;
+  }
+  .legend-scale{
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
+  .legend-scale .bar{
+    width:120px;
+    height:8px;
+    border-radius:4px;
+    background:linear-gradient(90deg, var(--red), var(--amber), var(--green));
+  }
+
+  section.defs{
+    margin-top:48px;
+  }
+  section.defs h2{
+    font-family:'Source Serif 4', serif;
+    font-size:1.3rem;
+    font-weight:700;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:10px;
+    margin-bottom:6px;
+  }
+  section.defs > p.intro{
+    color:var(--ink-soft);
+    font-size:0.88rem;
+    max-width:640px;
+    margin:10px 0 22px;
+  }
+  .def-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    border-top:1px solid var(--line);
+  }
+  .def-item{
+    padding:18px 20px 18px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .def-item:nth-child(odd){
+    padding-right:28px;
+    border-right:1px solid var(--line);
+  }
+  .def-item:nth-child(even){
+    padding-left:28px;
+  }
+  .def-item h3{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.82rem;
+    font-weight:600;
+    color:var(--gold);
+    margin:0 0 6px;
+    letter-spacing:0.02em;
+  }
+  .def-item p{
+    margin:0 0 8px;
+    font-size:0.85rem;
+    line-height:1.55;
+    color:var(--ink);
+  }
+  .def-item .signal{
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    display:flex;
+    gap:14px;
+  }
+  .def-item .signal b{color:var(--green); font-weight:600;}
+  .def-item .signal .bad{color:var(--red); font-weight:600;}
+
+  @media (max-width: 700px){
+    .def-grid{grid-template-columns:1fr;}
+    .def-item:nth-child(odd){border-right:none; padding-right:0;}
+    .def-item:nth-child(even){padding-left:0;}
+  }
+
+  .empty{
+    padding:40px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:0.9rem;
+  }
+  .status{
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:16px;
+    margin-top:8px;
+  }
+
+  .tabs{
+    display:flex;
+    align-items:flex-end;
+    gap:4px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+  }
+  .tab{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 14px;
+    font-size:0.85rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid transparent;
+    border-bottom:none;
+    border-radius:3px 3px 0 0;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active{
+    color:var(--ink);
+    background:var(--panel);
+    border-color:var(--line);
+    position:relative;
+    top:1px;
+  }
+  .tab .tab-close{
+    font-size:0.7rem;
+    opacity:0.5;
+    padding:0 2px;
+  }
+  .tab .tab-close:hover{opacity:1; color:var(--red);}
+  .tab-add{
+    padding:9px 12px;
+    font-size:0.9rem;
+    font-weight:700;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px dashed var(--line);
+    border-radius:3px;
+    cursor:pointer;
+    margin-bottom:4px;
+  }
+  .tab-add:hover{color:var(--gold); border-color:var(--gold);}
+
+  .board-title-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:6px;
+    flex-wrap:wrap;
+  }
+  .board-title-row h2{
+    font-family:'Source Serif 4', serif;
+    font-size:1.35rem;
+    font-weight:700;
+    margin:0;
+  }
+  .board-title-row button.rename{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:0.72rem;
+    text-decoration:underline;
+    padding:0;
+    cursor:pointer;
+  }
+  .board-title-row button.rename:hover{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Watchlist — Décote</h1>
+      <p>Suivi hebdomadaire d'entreprises potentiellement sous-valorisées, sur huit indicateurs croisés (valorisation, solidité, rendement, dividende).</p>
+    </div>
+    <div class="meta" id="lastUpdate">—</div>
+  </header>
+
+  <div id="connBanner" class="conn-banner warn"><span class="dot"></span><span id="connText">Connexion à la base de données…</span></div>
+
+  <div class="who-row">
+    <span>Ton prénom (affiché sur tes modifs) :</span>
+    <input type="text" id="whoInput" placeholder="Ton prénom" maxlength="20" />
+  </div>
+
+  <div class="tabs" id="tabsBar"></div>
+
+  <div class="board-title-row">
+    <h2 id="boardTitle">—</h2>
+    <button class="rename" id="renameBoardBtn">renommer</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left" id="companyCount">0 entreprise suivie</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="ghost" id="resetBtn">Réinitialiser l'exemple</button>
+      <button class="ghost" id="updateBtn">↻ MAJ de ce tableau</button>
+      <button id="addBtn">+ Ajouter une entreprise</button>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table id="watchTable">
+      <thead>
+        <tr>
+          <th data-sort-key="name">Entreprise</th>
+          <th class="num" data-sort-key="price">Prix</th>
+          <th class="num" data-sort-key="per">PER</th>
+          <th class="num" data-sort-key="pb">P/B</th>
+          <th class="num" data-sort-key="peg">PEG</th>
+          <th class="num" data-sort-key="debt">Dette/EBITDA</th>
+          <th class="num" data-sort-key="interestcov">Couv. Intérêts</th>
+          <th class="num" data-sort-key="roe">ROE (5A) %</th>
+          <th class="num" data-sort-key="fcf">FCF Yield %</th>
+          <th class="num" data-sort-key="divyield">Div. Yield %</th>
+          <th class="num" data-sort-key="payout">Payout %</th>
+          <th class="num" data-sort-key="fscore">F-Score</th>
+          <th class="num" data-sort-key="score">Note</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <div class="legend-scale">
+      <span>Cher / fragile</span>
+      <div class="bar"></div>
+      <span>Décoté / solide</span>
+    </div>
+    <div>Note composite = moyenne pondérée des indicateurs renseignés, sur 10 (PER, FCF Yield et F-Score comptent le plus ; dividendes en pénalité seulement).</div>
+  </div>
+  <div class="status" id="statusMsg"></div>
+
+  <section class="defs">
+    <h2>Ce que mesurent ces indicateurs</h2>
+    <p class="intro">Aucun de ces chiffres n'est fiable isolément — un PER bas peut signaler une décote réelle, ou une entreprise en train de couler (un "value trap"). L'idée est de croiser un signal de prix (les 4 premiers), un signal de qualité (ROE, FCF Yield) et un signal de soutenabilité du dividende (Div. Yield, Payout).</p>
+    <div class="def-grid">
+      <div class="def-item">
+        <h3>PER — Price / Earnings</h3>
+        <p>Le prix de l'action divisé par le bénéfice par action. Indique combien d'années de bénéfices actuels il faudrait pour "rembourser" le prix payé. À comparer à la moyenne historique du titre et à son secteur, jamais dans l'absolu.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &lt; 12</span><span class="bad">Signal cher : &gt; 25</span></div>
+      </div>
+      <div class="def-item">
+        <h3>P/B — Price / Book</h3>
+        <p>Le prix rapporté à la valeur comptable (actifs nets) de l'entreprise. L'indicateur historique de Benjamin Graham : un P/B sous 1 signifie que le marché valorise l'entreprise en dessous de ses actifs nets. Plus pertinent pour les banques, foncières, industrielles.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &lt; 1</span><span class="bad">Signal cher : &gt; 3</span></div>
+      </div>
+      <div class="def-item">
+        <h3>PEG — PER / Croissance</h3>
+        <p>Le PER divisé par le taux de croissance attendu du bénéfice par action. Corrige le principal défaut du PER seul : un PER de 20 est cher pour une entreprise qui ne croît pas, mais bon marché pour une entreprise qui croît de 25% par an. Un PEG sous 1 signale généralement une décote par rapport à la croissance réelle.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &lt; 1</span><span class="bad">Signal cher : &gt; 2</span></div>
+      </div>
+      <div class="def-item">
+        <h3>Dette nette / EBITDA</h3>
+        <p>Le nombre d'années d'EBITDA nécessaires pour rembourser la dette nette. C'est le garde-fou contre les "value traps" : une décote apparente sur une entreprise surendettée n'est souvent pas une opportunité.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &lt; 1</span><span class="bad">Signal risqué : &gt; 4</span></div>
+      </div>
+      <div class="def-item">
+        <h3>ROE — Return on Equity</h3>
+        <p>Le bénéfice net rapporté aux capitaux propres. Mesure la rentabilité de l'argent des actionnaires. Une entreprise sous-valorisée avec un bon ROE est un signal bien plus solide qu'une décote sur une entreprise peu rentable.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &gt; 15%</span><span class="bad">Signal faible : &lt; 5%</span></div>
+      </div>
+      <div class="def-item">
+        <h3>FCF Yield</h3>
+        <p>Le free cash flow (trésorerie réellement générée) rapporté à la capitalisation boursière. Souvent plus honnête que le bénéfice comptable, difficile à manipuler par des choix comptables. Un FCF yield élevé signale un rendement réel important pour le prix payé.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &gt; 8%</span><span class="bad">Signal faible : &lt; 1%</span></div>
+      </div>
+      <div class="def-item">
+        <h3>Dividend Yield</h3>
+        <p>Le dividende annuel rapporté au cours de l'action. Ne joue plus qu'en pénalité dans la note : un yield raisonnable n'apporte aucun bonus (ce n'est pas un signal de décote), mais un yield anormalement élevé fait baisser la note, car c'est souvent un signal d'alarme (marché anticipant une coupe) plutôt qu'une bonne affaire.</p>
+        <div class="signal"><span><b>Neutre</b> : ≤ 8%</span><span class="bad">Suspect au-delà de : 15%</span></div>
+      </div>
+      <div class="def-item">
+        <h3>Payout Ratio</h3>
+        <p>La part du bénéfice net reversée en dividendes. Ne joue plus qu'en pénalité dans la note : un taux modéré n'apporte aucun bonus, mais un taux trop élevé fait baisser la note — l'entreprise distribue alors plus qu'elle ne gagne, signal classique de dividende intenable.</p>
+        <div class="signal"><span><b>Neutre</b> : ≤ 60%</span><span class="bad">Suspect au-delà de : 100%</span></div>
+      </div>
+      <div class="def-item">
+        <h3>Couverture des intérêts</h3>
+        <p>EBIT divisé par les charges d'intérêts de la dette. Contrairement à la Dette nette/EBITDA (qui dit combien l'entreprise doit), cet indicateur dit si elle peut confortablement payer les intérêts sur cette dette avec son résultat d'exploitation courant. Un ratio bas est un signal d'alerte même si la dette nominale paraît raisonnable.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &gt; 8x</span><span class="bad">Signal risqué : &lt; 2x</span></div>
+      </div>
+      <div class="def-item">
+        <h3>F-Score (Piotroski, simplifié)</h3>
+        <p>Score composite sur 9 points conçu spécifiquement pour repérer les "value traps" — une décote apparente qui cache une entreprise en déclin. Il croise rentabilité, effet de levier et efficacité opérationnelle en un seul chiffre. Nécessite plusieurs années de bilan pour être calculé, donc plus lent à renseigner que les autres indicateurs.</p>
+        <div class="signal"><span><b>Signal favorable</b> : &gt; 7/9</span><span class="bad">Signal risqué : &lt; 3/9</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="defs">
+    <h2>Glossaire des termes sous-jacents</h2>
+    <p class="intro">Ces termes reviennent dans plusieurs indicateurs ci-dessus. Les comprendre aide à interpréter pourquoi un ratio bouge.</p>
+    <div class="def-grid">
+      <div class="def-item">
+        <h3>EBITDA</h3>
+        <p>Bénéfice avant intérêts, impôts, dépréciation et amortissement. C'est le profit généré par l'activité pure de l'entreprise, avant l'effet de sa structure financière (dette) et fiscale, et avant l'usure comptable de ses actifs. Sert de base pour comparer la rentabilité opérationnelle entre entreprises, indépendamment de leur endettement.</p>
+      </div>
+      <div class="def-item">
+        <h3>EBIT</h3>
+        <p>Bénéfice avant intérêts et impôts — proche de l'EBITDA, mais après déduction de l'amortissement et des dépréciations. Reflète mieux l'usure réelle des équipements que l'EBITDA, utile pour les entreprises à forte intensité capitalistique (industrie lourde, télécoms).</p>
+      </div>
+      <div class="def-item">
+        <h3>Dette nette</h3>
+        <p>La dette financière totale de l'entreprise (emprunts, obligations) moins sa trésorerie disponible. C'est l'endettement "réel" : une entreprise avec beaucoup de dette mais aussi beaucoup de cash en réserve peut avoir une dette nette faible, voire négative (on parle alors de trésorerie nette, comme c'est le cas d'Hermès).</p>
+      </div>
+      <div class="def-item">
+        <h3>Capitaux propres</h3>
+        <p>La valeur nette de l'entreprise appartenant à ses actionnaires : actifs totaux moins dettes totales. C'est ce qui resterait aux actionnaires si l'entreprise vendait tout et remboursait toutes ses dettes. Base de calcul du P/B et du ROE.</p>
+      </div>
+      <div class="def-item">
+        <h3>Valeur d'entreprise (EV)</h3>
+        <p>Capitalisation boursière + dette nette. Représente le coût total pour racheter l'entreprise, en tenant compte de la dette à rembourser. Plus pertinente que la seule capitalisation boursière pour comparer des entreprises à niveaux d'endettement différents — d'où son usage dans l'EV/EBITDA plutôt qu'un simple Prix/EBITDA.</p>
+      </div>
+      <div class="def-item">
+        <h3>Capitalisation boursière</h3>
+        <p>Le prix de l'action multiplié par le nombre total d'actions en circulation. C'est la valeur que le marché attribue aux seuls capitaux propres de l'entreprise, sans tenir compte de sa dette — contrairement à la valeur d'entreprise.</p>
+      </div>
+      <div class="def-item">
+        <h3>Free Cash Flow (FCF)</h3>
+        <p>La trésorerie générée par l'activité, moins les investissements nécessaires pour maintenir et développer l'outil de production (capex). C'est l'argent réellement disponible pour rémunérer les actionnaires (dividendes, rachats d'actions) ou rembourser la dette — sert de base au FCF Yield.</p>
+      </div>
+      <div class="def-item">
+        <h3>Bénéfice net (résultat net)</h3>
+        <p>Ce qui reste du chiffre d'affaires après TOUTES les charges : coûts opérationnels, intérêts de la dette, impôts, éléments exceptionnels. Base de calcul du PER et du ROE. Peut être plus volatil que l'EBITDA d'une année sur l'autre à cause des éléments non récurrents (dépréciations, cessions d'actifs).</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ===== FIREBASE CONFIG ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAI4ULc9RQkQJNpr4tM065FNZ27XpkhcWc",
+  authDomain: "suivi-valeurs-boursieres.firebaseapp.com",
+  databaseURL: "https://suivi-valeurs-boursieres-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "suivi-valeurs-boursieres",
+  storageBucket: "suivi-valeurs-boursieres.firebasestorage.app",
+  messagingSenderId: "904415675268",
+  appId: "1:904415675268:web:7a01e82aa7bf7f287ed3d1"
+};
+
+let db = null, firebaseReady = false;
+
+function initFirebase(){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    firebaseReady = true;
+    const banner = document.getElementById('connBanner');
+    db.ref('.info/connected').on('value', snap => {
+      if(snap.val() === true){
+        banner.className = 'conn-banner ok';
+        document.getElementById('connText').textContent = 'Connecté — synchronisation temps réel active.';
+      } else {
+        banner.className = 'conn-banner warn';
+        document.getElementById('connText').textContent = 'Connexion perdue — reconnexion…';
+      }
+    });
+    listenToBoards();
+  } catch(e){
+    document.getElementById('connText').textContent = 'Erreur Firebase : ' + e.message;
+  }
+}
+
+function keyBy(list){
+  const obj = {};
+  list.forEach(c => { const { id, ...rest } = c; obj[id] = rest; });
+  return obj;
+}
+function unkeyBoard(raw){
+  return {
+    id: raw._id,
+    title: raw.title || 'Tableau',
+    companies: raw.companies ? Object.keys(raw.companies).map(cid => ({ id: cid, ...raw.companies[cid] })) : []
+  };
+}
+
+let firstLoad = true;
+function listenToBoards(){
+  db.ref('boards').on('value', snapshot => {
+    const val = snapshot.val();
+    if(!val){
+      // Seed the shared DB once with the canonical boards
+      const seed = {
+        main: { title: 'Watchlist — Décote', companies: keyBy(EXAMPLE) },
+        alu:  { title: "Producteur d'aluminium", companies: keyBy(EXAMPLE_ALU) }
+      };
+      db.ref('boards').set(seed);
+      return;
+    }
+    const order = ['main','alu'];
+    const ids = Object.keys(val).sort((a,b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia===-1?99:ia) - (ib===-1?99:ib);
+    });
+    boards = ids.map(id => unkeyBoard({ ...val[id], _id: id }));
+    if(!activeBoardId || !boards.find(b => b.id === activeBoardId)){
+      activeBoardId = boards[0].id;
+    }
+    companies = getActiveBoard().companies;
+    refreshSortOrder();
+    renderTabs();
+    render();
+    document.getElementById('lastUpdate').textContent = 'Synchronisé ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    firstLoad = false;
+  }, err => {
+    document.getElementById('connBanner').className = 'conn-banner warn';
+    document.getElementById('connText').textContent = 'Erreur de synchro : ' + err.message;
+  });
+}
+
+function getWho(){ return (localStorage.getItem('watchlist-who') || '').trim(); }
+
+const THRESH = {
+  per:   { good: 12, bad: 25, higherIsBetter: false },
+  pb:    { good: 1,  bad: 3,  higherIsBetter: false },
+  peg:   { good: 1,  bad: 2,  higherIsBetter: false },
+  debt:  { good: 1,  bad: 4,  higherIsBetter: false },
+  interestcov: { good: 8, bad: 2, higherIsBetter: true },
+  roe:   { good: 15, bad: 5,  higherIsBetter: true },
+  fcf:   { good: 8,  bad: 1,  higherIsBetter: true },
+  divyield: { good: 4, bad: 0, higherIsBetter: true },
+  payout: { good: 40, bad: 90, higherIsBetter: false },
+  fscore: { good: 7, bad: 3, higherIsBetter: true },
+};
+const METRIC_KEYS = ['per','pb','peg','debt','interestcov','roe','fcf','divyield','payout','fscore'];
+
+const EXAMPLE = [
+  { id: cryptoId(), name: 'Technip Energies', price: 33.32, currency: 'EUR', ticker: 'TE', per: 14.6, pb: 2.38, peg: 1.4, debt: 0, interestcov: '', roe: 18.5, fcf: 10.7, divyield: 2.9, payout: 49 , fscore: 4},
+  { id: cryptoId(), name: 'Rubis', price: '', currency: '', ticker: 'RUI', per: 11, pb: 1, peg: '', debt: 2.02, interestcov: '', roe: 11.42, fcf: 1, divyield: 6, payout: 55 , fscore: 6},
+  { id: cryptoId(), name: 'Vallourec', price: '', currency: '', ticker: 'VK', per: 14.5, pb: 2.14, peg: '', debt: 0, interestcov: '', roe: 15.7, fcf: 6.66, divyield: 7.82, payout: 113 , fscore: 9},
+  { id: cryptoId(), name: 'Vicat', price: '', currency: '', ticker: 'VCT', per: 11, pb: 0.95, peg: '', debt: 1.5, interestcov: '', roe: 9, fcf: 10, divyield: 3.6, payout: 40 , fscore: 9},
+  { id: cryptoId(), name: 'OPmobility', price: '', currency: '', ticker: 'OPM', per: 8.4, pb: 1, peg: 0.6, debt: 2.19, interestcov: 27.5, roe: 11, fcf: 6, divyield: 4.09, payout: 60 , fscore: 7},
+  { id: cryptoId(), name: 'Derichebourg', price: '', currency: '', ticker: 'DBG', per: 10, pb: 1.22, peg: 0.4, debt: 2.3, interestcov: 5.6, roe: 15, fcf: 6.3, divyield: 1.99, payout: 20 , fscore: 6},
+  { id: cryptoId(), name: 'Manitou', price: 22.85, currency: 'EUR', ticker: 'MTU', per: 9.84, pb: 0.8, peg: 0.3, debt: 1, interestcov: '', roe: 12, fcf: 1, divyield: 4, payout: 37 , fscore: 8},
+  { id: cryptoId(), name: 'Aurubis', price: 176.00, currency: 'EUR', ticker: 'NDA', per: 14, pb: 0.9, peg: 1.8, debt: 0.5, interestcov: 14, roe: 13, fcf: -0.3, divyield: 1.4, payout: 16 , fscore: 7},
+  { id: cryptoId(), name: 'Boliden', price: 565.60, currency: 'SEK', ticker: 'BOL', per: 13.7, pb: 1.88, peg: 0.6, debt: 1, interestcov: 10, roe: 18, fcf: 2.45, divyield: 2.45, payout: 33.5 , fscore: 6},
+  { id: cryptoId(), name: 'Umicore', price: 21.86, currency: 'EUR', ticker: 'UMI', per: 13.5, pb: 2.02, peg: '', debt: 1.34, interestcov: 6.9, roe: 17.7, fcf: 6, divyield: 2.23, payout: 30 , fscore: 6},
+  { id: cryptoId(), name: 'Befesa', price: 36.18, currency: 'EUR', ticker: 'BFSA', per: 13.7, pb: 1.62, peg: 0.5, debt: 3.8, interestcov: 2.5, roe: 9.7, fcf: 7.85, divyield: 3.26, payout: 50 , fscore: 5},
+  { id: cryptoId(), name: 'Meta Platforms', price: 520.00, currency: 'EUR', ticker: 'META', per: 18, pb: 4.9, peg: 0.4, debt: 0.56, interestcov: 105, roe: 35, fcf: -0.05, divyield: 0.37, payout: 6.63 , fscore: 8},
+  { id: cryptoId(), name: 'China Hongqiao Group', price: '', currency: 'HKD', ticker: '1378.HK', per: 6.6, pb: 1.7, peg: 0.37, debt: 1.5, interestcov: 21.9, roe: 18.8, fcf: 12.4, divyield: 7, payout: 36 , fscore: 6},
+  { id: cryptoId(), name: 'FDJ United', price: 21.73, currency: 'EUR', per: 11.4, pb: 4.56, peg: 0.1, debt: 1.9, interestcov: 9, roe: 18, fcf: 8.9, divyield: 9.61, payout: 110 , fscore: 6},
+  { id: cryptoId(), name: 'Amazon', price: 259.34, currency: 'USD', per: 22.8, pb: 5.23, peg: 0.3, debt: 1.1, interestcov: 30, roe: 21, fcf: -1.18, divyield: 0, payout: 0 , fscore: 7},
+  { id: cryptoId(), name: 'LVMH', price: 384.30, currency: 'EUR', per: 17, pb: 3.17, peg: '', debt: 0.97, interestcov: 15.3, roe: 15.8, fcf: 4, divyield: 3.46, payout: 59 , fscore: 6},
+];
+
+const EXAMPLE_ALU = [
+  { id: cryptoId(), name: 'Chinalco (Aluminum Corp of China / Chalco)', price: 8.40, currency: 'HKD', per: 8.63, pb: 2.04, peg: 1.5, debt: 1.8, interestcov: 32.8, roe: 17.7, fcf: 9, divyield: 4, payout: 40 , fscore: 7},
+  { id: cryptoId(), name: 'China Hongqiao Group', price: 34.00, currency: 'HKD', per: 6.6, pb: 1.7, peg: 0.37, debt: 1.5, interestcov: 21.9, roe: 18.8, fcf: 12.4, divyield: 7, payout: 36 , fscore: 6},
+  { id: cryptoId(), name: 'Rusal', price: 2.96, currency: 'HKD', per: '', pb: 0.81, peg: '', debt: 5.02, interestcov: 2, roe: -3.97, fcf: -1.8, divyield: 0, payout: 0 , fscore: 5},
+  { id: cryptoId(), name: 'Rio Tinto', price: 7324.50, currency: 'GBX', per: 13, pb: 2.7, peg: 0.5, debt: 0.65, interestcov: 9, roe: 20, fcf: 7, divyield: 4.5, payout: 55 , fscore: 4},
+  { id: cryptoId(), name: 'Vedanta', price: 264.65, currency: 'INR', per: 14.8, pb: 5.16, peg: '', debt: 2.4, interestcov: 3, roe: 38.5, fcf: 6.65, divyield: 5.19, payout: 76.9 , fscore: 4},
+  { id: cryptoId(), name: 'Norsk Hydro', price: 91.04, currency: 'NOK', per: 9.8, pb: 1.3, peg: 0.42, debt: 2.5, interestcov: 13, roe: 5.7, fcf: 4, divyield: 5.6, payout: 88 , fscore: 5},
+];
+
+function cryptoId(){
+  return 'c_' + Math.random().toString(36).slice(2, 10);
+}
+
+function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+// Dividend indicators are penalty-only: neutral (score 1) below the "safe" bound,
+// degrading toward 0 only once they cross into suspicious territory (too good to be true).
+const DIVIDEND_PENALTY = {
+  divyield: { safe: 8, suspicious: 15 },   // e.g. 15%+ yield is a red flag, not a bonus
+  payout:   { safe: 60, suspicious: 100 }, // e.g. paying out more than earned
+};
+
+function metricScore(key, value){
+  if(value === null || value === undefined || value === '' || isNaN(value)) return null;
+  const v = parseFloat(value);
+
+  if(DIVIDEND_PENALTY[key]){
+    const { safe, suspicious } = DIVIDEND_PENALTY[key];
+    if(v <= safe) return 1;
+    if(v >= suspicious) return 0;
+    return 1 - (v - safe) / (suspicious - safe);
+  }
+
+  const t = THRESH[key];
+  let ratio;
+  if(t.higherIsBetter){
+    ratio = (v - t.bad) / (t.good - t.bad);
+  } else {
+    ratio = (t.bad - v) / (t.bad - t.good);
+  }
+  return clamp(ratio, 0, 1);
+}
+
+function lerp(a, b, t){ return a + (b - a) * t; }
+
+function colorForScore(score){
+  if(score === null) return { bg: '#EFEAE0', fg: '#8B8478' };
+  // red -> amber -> green
+  const red = [181, 69, 61];
+  const amber = [184, 145, 43];
+  const green = [75, 122, 86];
+  let c1, c2, t;
+  if(score < 0.5){
+    c1 = red; c2 = amber; t = score / 0.5;
+  } else {
+    c1 = amber; c2 = green; t = (score - 0.5) / 0.5;
+  }
+  const rgb = [0,1,2].map(i => Math.round(lerp(c1[i], c2[i], t)));
+  const bgAlpha = 0.16 + score * 0.10;
+  return {
+    bg: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${bgAlpha.toFixed(2)})`,
+    fg: `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+  };
+}
+
+const METRIC_WEIGHTS = {
+  per: 0.15, fcf: 0.15, fscore: 0.15,
+  roe: 0.10, debt: 0.10, interestcov: 0.10,
+  pb: 0.08, peg: 0.07,
+  divyield: 0.05, payout: 0.05,
+};
+
+function compositeScore(company){
+  let weightedSum = 0, weightTotal = 0;
+  METRIC_KEYS.forEach(k => {
+    const s = metricScore(k, company[k]);
+    if(s !== null){
+      const w = METRIC_WEIGHTS[k] || 0;
+      weightedSum += s * w;
+      weightTotal += w;
+    }
+  });
+  if(weightTotal === 0) return null;
+  return Math.round((weightedSum / weightTotal) * 100) / 10; // one decimal, out of 10
+}
+
+let companies = [];
+let sortState = { key: null, direction: 'asc' };
+let displayOrder = null; // array of company ids, recomputed only on structural changes
+
+let boards = [];
+let activeBoardId = null;
+const BOARDS_KEY = 'value-watchlist-boards';
+
+function blankCompany(){
+  return { id: cryptoId(), name: '', price: '', currency: '', per: '', pb: '', peg: '', debt: '', interestcov: '', roe: '', fcf: '', divyield: '', payout: '', fscore: '' };
+}
+
+function getActiveBoard(){
+  return boards.find(b => b.id === activeBoardId) || boards[0];
+}
+
+function syncActiveBoard(){
+  const board = getActiveBoard();
+  if(board) board.companies = companies;
+}
+
+function saveBoardsNow(){
+  // Firebase is the source of truth; writes happen per-board. This is a no-op kept for compatibility.
+}
+
+function switchBoard(id){
+  activeBoardId = id;
+  companies = getActiveBoard().companies;
+  sortState = { key: null, direction: 'asc' };
+  refreshSortOrder();
+  renderTabs();
+  render();
+}
+
+function createBoard(){
+  if(!firebaseReady) return;
+  const title = prompt('Titre du nouveau tableau :', 'Nouveau tableau');
+  if(title === null) return;
+  const newBoard = {
+    id: 'b_' + Math.random().toString(36).slice(2, 10),
+    title: (title.trim() || 'Nouveau tableau'),
+    companies: Array.from({ length: 5 }, blankCompany)
+  };
+  db.ref('boards/' + newBoard.id).set({ title: newBoard.title, companies: keyBy(newBoard.companies) });
+  activeBoardId = newBoard.id;
+  // The onValue listener will re-render once the write propagates.
+}
+
+function deleteBoard(id){
+  if(boards.length <= 1) return; // always keep at least one board
+  const board = boards.find(b => b.id === id);
+  if(!board) return;
+  if(!confirm(`Supprimer le tableau "${board.title}" pour tout le monde ?`)) return;
+  db.ref('boards/' + id).remove();
+}
+
+function renderTabs(){
+  const bar = document.getElementById('tabsBar');
+  bar.innerHTML = '';
+  boards.forEach(board => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (board.id === activeBoardId ? ' active' : '');
+    const label = document.createElement('span');
+    label.textContent = board.title;
+    tab.appendChild(label);
+    if(boards.length > 1){
+      const close = document.createElement('span');
+      close.className = 'tab-close';
+      close.textContent = '✕';
+      close.addEventListener('click', (e) => { e.stopPropagation(); deleteBoard(board.id); });
+      tab.appendChild(close);
+    }
+    tab.addEventListener('click', () => {
+      if(board.id !== activeBoardId) switchBoard(board.id);
+    });
+    bar.appendChild(tab);
+  });
+  const addTab = document.createElement('button');
+  addTab.className = 'tab-add';
+  addTab.textContent = '+ Nouveau tableau';
+  addTab.addEventListener('click', createBoard);
+  bar.appendChild(addTab);
+
+  const board = getActiveBoard();
+  document.getElementById('boardTitle').textContent = board ? board.title : '—';
+}
+
+function requestUpdatePrompt(){
+  const board = getActiveBoard();
+  if(!board) return;
+  const names = board.companies.map(c => c.name).filter(Boolean);
+  const list = names.length ? names.join(', ') : '(aucune entreprise nommée dans ce tableau)';
+  const text = `Mets à jour le tableau "${board.title}" avec les indicateurs actuels pour : ${list}.\n\nTrouve pour chacune : PER, P/B, PEG, Dette nette/EBITDA, ROE, FCF Yield, Dividend Yield, Payout Ratio.`;
+  const status = document.getElementById('statusMsg');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(() => {
+      status.textContent = 'Prompt copié — colle-le dans le chat avec Claude pour lancer la mise à jour.';
+      setTimeout(() => { status.textContent = ''; }, 4000);
+    }).catch(() => {
+      status.textContent = 'Copie automatique impossible. Prompt : ' + text;
+    });
+  } else {
+    status.textContent = 'Prompt à copier manuellement : ' + text;
+  }
+}
+
+function computeSortedOrder(){
+  return sortCompanies(companies.slice()).map(c => c.id);
+}
+
+function refreshSortOrder(){
+  displayOrder = computeSortedOrder();
+}
+
+function getDisplayList(){
+  if(!displayOrder){
+    refreshSortOrder();
+  }
+  const byId = new Map(companies.map(c => [c.id, c]));
+  const ordered = displayOrder.map(id => byId.get(id)).filter(Boolean);
+  // Any company not yet in displayOrder (shouldn't normally happen) gets appended
+  const knownIds = new Set(displayOrder);
+  companies.forEach(c => { if(!knownIds.has(c.id)) ordered.push(c); });
+  return ordered;
+}
+
+function sortCompanies(list){
+  if(!sortState.key) return list;
+  const key = sortState.key;
+  const dir = sortState.direction === 'asc' ? 1 : -1;
+  const withValue = list.map((c, idx) => {
+    let v;
+    if(key === 'score'){
+      v = compositeScore(c);
+    } else if(key === 'name' || key === 'ticker' || key === 'currency'){
+      v = (c[key] || '').toString().toLowerCase();
+    } else {
+      v = c[key];
+    }
+    const isBlank = v === '' || v === undefined || v === null || (typeof v === 'number' && isNaN(v));
+    return { c, v, isBlank, idx };
+  });
+  withValue.sort((a, b) => {
+    // Blanks always sort to the bottom, regardless of direction
+    if(a.isBlank && b.isBlank) return a.idx - b.idx;
+    if(a.isBlank) return 1;
+    if(b.isBlank) return -1;
+    if(typeof a.v === 'string'){
+      return a.v.localeCompare(b.v) * dir;
+    }
+    return (a.v - b.v) * dir;
+  });
+  return withValue.map(w => w.c);
+}
+let saveTimer = null;
+
+// Deletions on shared boards simply remove the row from Firebase for everyone.
+function addDeletedName(boardId, name){ /* not needed with shared DB */ }
+
+async function saveCompanies(){
+  if(!firebaseReady){ return; }
+  document.getElementById('statusMsg').textContent = 'Enregistrement…';
+  try{
+    syncActiveBoard();
+    const board = getActiveBoard();
+    await db.ref('boards/' + board.id + '/companies').set(keyBy(companies));
+    document.getElementById('statusMsg').textContent = 'Enregistré ✓ (partagé avec le groupe)';
+    setTimeout(() => { document.getElementById('statusMsg').textContent = ''; }, 2000);
+  } catch(e){
+    document.getElementById('statusMsg').textContent = "Erreur d'enregistrement : " + e.message;
+  }
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveCompanies, 500);
+}
+
+function metricCell(company, key, label){
+  const value = company[key];
+  const score = metricScore(key, value);
+  const color = colorForScore(score);
+  return `
+    <td class="metric-cell">
+      <div class="swatch" style="background:${color.bg}; color:${color.fg};">
+        <input type="number" step="0.1" value="${value === undefined || value === null ? '' : value}"
+          data-id="${company.id}" data-key="${key}" placeholder="—" />
+      </div>
+    </td>
+  `;
+}
+
+function render(){
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('companyCount').textContent =
+    companies.length + (companies.length > 1 ? ' entreprises suivies' : ' entreprise suivie');
+
+  updateSortHeaders();
+
+  if(companies.length === 0){
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty">Aucune entreprise suivie. Clique sur "+ Ajouter une entreprise" pour commencer.</div></td></tr>`;
+    return;
+  }
+
+  const displayList = getDisplayList();
+
+  tbody.innerHTML = displayList.map(c => {
+    const score = compositeScore(c);
+    const color = colorForScore(score === null ? null : score / 10);
+    return `
+      <tr>
+        <td class="name-cell"><input type="text" value="${escapeHtml(c.name)}" data-id="${c.id}" data-key="name" placeholder="Nom de l'entreprise" /></td>
+        <td class="price-cell">
+          <input type="number" step="0.01" value="${c.price === undefined || c.price === null ? '' : c.price}" data-id="${c.id}" data-key="price" placeholder="—" />
+          <input type="text" class="price-currency" value="${escapeHtml(c.currency)}" data-id="${c.id}" data-key="currency" placeholder="EUR" />
+        </td>
+        ${metricCell(c, 'per')}
+        ${metricCell(c, 'pb')}
+        ${metricCell(c, 'peg')}
+        ${metricCell(c, 'debt')}
+        ${metricCell(c, 'interestcov')}
+        ${metricCell(c, 'roe')}
+        ${metricCell(c, 'fcf')}
+        ${metricCell(c, 'divyield')}
+        ${metricCell(c, 'payout')}
+        ${metricCell(c, 'fscore')}
+        <td class="score-cell">
+          <span class="score-badge" style="background:${color.bg}; color:${color.fg};">
+            ${score === null ? '—' : score.toFixed(1)}<span>/10</span>
+          </span>
+        </td>
+        <td class="del-cell"><button class="danger small" data-del="${c.id}">✕</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', onFieldChange);
+  });
+  tbody.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      companies = companies.filter(c => c.id !== btn.dataset.del);
+      syncActiveBoard();
+      refreshSortOrder();
+      render();
+      scheduleSave();
+    });
+  });
+}
+
+function updateSortHeaders(){
+  document.querySelectorAll('thead th[data-sort-key]').forEach(th => {
+    const key = th.dataset.sortKey;
+    const existingArrow = th.querySelector('.arrow');
+    if(existingArrow) existingArrow.remove();
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
+    if(sortState.key === key){
+      th.classList.add('active');
+      arrow.textContent = sortState.direction === 'asc' ? '▲' : '▼';
+    } else {
+      th.classList.remove('active');
+      arrow.textContent = '⇅';
+    }
+    th.appendChild(arrow);
+  });
+}
+
+function escapeHtml(str){
+  if(str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function onFieldChange(e){
+  const { id, key } = e.target.dataset;
+  const company = companies.find(c => c.id === id);
+  if(!company) return;
+  let val = e.target.value;
+  if(key !== 'name' && key !== 'ticker' && key !== 'currency'){
+    val = val === '' ? '' : parseFloat(val);
+  }
+  company[key] = val;
+
+  // Only re-render score badge + this row's swatches without losing focus:
+  // simplest robust approach — re-render fully but restore focus after.
+  const active = document.activeElement;
+  const activeId = active ? active.dataset.id : null;
+  const activeKey = active ? active.dataset.key : null;
+  const selStart = active && active.selectionStart;
+
+  render();
+
+  if(activeId){
+    const toFocus = document.querySelector(`[data-id="${activeId}"][data-key="${activeKey}"]`);
+    if(toFocus){
+      toFocus.focus();
+      if(typeof selStart === 'number' && toFocus.setSelectionRange){
+        try{ toFocus.setSelectionRange(selStart, selStart); }catch(_){}
+      }
+    }
+  }
+  scheduleSave();
+}
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const newCompany = blankCompany();
+  newCompany.name = 'Nouvelle entreprise';
+  companies.push(newCompany);
+  syncActiveBoard();
+  refreshSortOrder();
+  render();
+  scheduleSave();
+  const nameInput = document.querySelector(`[data-id="${newCompany.id}"][data-key="name"]`);
+  if(nameInput){ nameInput.focus(); nameInput.select(); }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const board = getActiveBoard();
+  const canonicalData = board && board.id === 'main' ? EXAMPLE : (board && board.id === 'alu' ? EXAMPLE_ALU : null);
+  const msg = canonicalData
+    ? 'Remplacer ce tableau par la liste d\'exemple ?'
+    : `Vider le tableau "${board.title}" (5 lignes vides) ?`;
+  if(!confirm(msg)) return;
+  if(canonicalData){
+    companies = JSON.parse(JSON.stringify(canonicalData));
+  } else {
+    companies = Array.from({ length: 5 }, blankCompany);
+  }
+  syncActiveBoard();
+  refreshSortOrder();
+  render();
+  scheduleSave();
+});
+
+document.getElementById('updateBtn').addEventListener('click', requestUpdatePrompt);
+
+document.getElementById('renameBoardBtn').addEventListener('click', () => {
+  const board = getActiveBoard();
+  if(!board || !firebaseReady) return;
+  const title = prompt('Renommer ce tableau (pour tout le monde) :', board.title);
+  if(title === null) return;
+  db.ref('boards/' + board.id + '/title').set(title.trim() || board.title);
+});
+
+document.querySelectorAll('thead th[data-sort-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sortKey;
+    if(sortState.key === key){
+      sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.key = key;
+      sortState.direction = 'asc';
+    }
+    refreshSortOrder();
+    render();
+  });
+});
+
+const whoInput = document.getElementById('whoInput');
+whoInput.value = getWho();
+whoInput.addEventListener('input', () => { localStorage.setItem('watchlist-who', whoInput.value.trim()); });
+
+initFirebase();
+</script>
+</body>
+</html>
