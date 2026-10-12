@@ -498,7 +498,17 @@
       <h3>8. Ajouter une entreprise (sans rien casser)</h3>
       <ul>
         <li>Clique "+ Ajouter une entreprise", tape son <b>nom</b>.</li>
-        <li>Renseigne son <b>Symbole</b> boursier (2ᵉ colonne) au bon format : actions US = <code>AMZN</code> ; Euronext Paris = <code>MC</code> ; etc. <b>Sans le bon symbole, le bouton Prix auto ignorera la ligne.</b></li>
+        <li>Renseigne son <b>Symbole Yahoo complet</b> (2ᵉ colonne), avec le suffixe de la place boursière. C'est ce qui permet au Prix auto de la trouver :
+          <ul>
+            <li>USA (NYSE/Nasdaq) : pas de suffixe → <code>AMZN</code>, <code>META</code></li>
+            <li>Euronext Paris : <code>.PA</code> → <code>MC.PA</code>, <code>RUI.PA</code></li>
+            <li>Euronext Bruxelles : <code>.BR</code> → <code>UMI.BR</code></li>
+            <li>Allemagne (Xetra) : <code>.DE</code> → <code>NDA.DE</code></li>
+            <li>Suède : <code>.ST</code> → <code>BOL.ST</code> &nbsp;|&nbsp; Oslo : <code>.OL</code> → <code>NHY.OL</code></li>
+            <li>Londres : <code>.L</code> → <code>RIO.L</code> &nbsp;|&nbsp; Inde : <code>.NS</code> → <code>VEDL.NS</code></li>
+            <li>Hong Kong : <code>.HK</code> → <code>1378.HK</code> (code à 4 chiffres)</li>
+          </ul>
+          <span class="warn-txt">Astuce :</span> pour trouver le symbole exact, cherche l'entreprise sur finance.yahoo.com — le code entre parenthèses en haut (ex. "LVMH (MC.PA)") est celui à copier.</li>
         <li>Clique "↻ Prix auto" pour remplir le reste. Complète F-Score et Couverture à la main si tu les as.</li>
       </ul>
 
@@ -730,6 +740,16 @@ function listenToBoards(){
         alu:  { title: "Producteur d'aluminium", companies: keyBy(EXAMPLE_ALU) }
       };
       db.ref('boards').set(seed);
+      return;
+    }
+    // AUTO-RESTORE: if a canonical board vanished (e.g. wiped by an old bug),
+    // recreate it from the file data rather than leaving it missing.
+    if(!val.main){
+      db.ref('boards/main').set({ title: 'Watchlist — Décote', companies: keyBy(EXAMPLE) });
+      return;
+    }
+    if(!val.alu){
+      db.ref('boards/alu').set({ title: "Producteur d'aluminium", companies: keyBy(EXAMPLE_ALU) });
       return;
     }
     const order = ['main','alu'];
@@ -1035,11 +1055,21 @@ function addDeletedName(boardId, name){ /* not needed with shared DB */ }
 
 async function saveCompanies(){
   if(!firebaseReady){ return; }
+  syncActiveBoard();
+  const board = getActiveBoard();
+  if(!board) return;
+  // SAFETY: never write an empty company set to Firebase. An empty object is
+  // interpreted by Firebase as "delete this node", which would wipe the board
+  // for everyone. If a board legitimately has 0 rows, keep a hidden placeholder.
+  const payload = keyBy(companies);
+  if(Object.keys(payload).length === 0){
+    document.getElementById('statusMsg').textContent = "Tableau vide : ajoute au moins une entreprise pour enregistrer.";
+    setTimeout(() => { document.getElementById('statusMsg').textContent = ''; }, 3000);
+    return;
+  }
   document.getElementById('statusMsg').textContent = 'Enregistrement…';
   try{
-    syncActiveBoard();
-    const board = getActiveBoard();
-    await db.ref('boards/' + board.id + '/companies').set(keyBy(companies));
+    await db.ref('boards/' + board.id + '/companies').set(payload);
     document.getElementById('statusMsg').textContent = 'Enregistré ✓ (partagé avec le groupe)';
     setTimeout(() => { document.getElementById('statusMsg').textContent = ''; }, 2000);
   } catch(e){
@@ -1091,7 +1121,7 @@ function render(){
     return `
       <tr>
         <td class="name-cell"><input type="text" value="${escapeHtml(c.name)}" data-id="${c.id}" data-key="name" placeholder="Nom de l'entreprise" /></td>
-        <td class="ticker-cell"><input type="text" value="${escapeHtml(c.symbol)}" data-id="${c.id}" data-key="symbol" placeholder="ex: MC.PA" style="width:84px;" /></td>
+        <td class="ticker-cell"><input type="text" value="${escapeHtml(c.symbol)}" data-id="${c.id}" data-key="symbol" placeholder="ex: MC.PA / AMZN" style="width:100px;" title="Symbole Yahoo complet avec suffixe de place (.PA Paris, .HK Hong Kong, rien pour US)" /></td>
         <td class="price-cell${isApi(c,'price') ? ' api-filled' : ''}">
           <input type="number" step="0.01" value="${c.price === undefined || c.price === null ? '' : c.price}" data-id="${c.id}" data-key="price" placeholder="—" />
           <input type="text" class="price-currency" value="${escapeHtml(c.currency)}" data-id="${c.id}" data-key="currency" placeholder="EUR" />
@@ -1247,17 +1277,27 @@ const YAHOO_PROXY = 'https://yahoo-proxy.ribierethibault.workers.dev/';
 
 async function fetchYahoo(c){
   const out = {};
-  if(!c.symbol || !c.exch) return out;
-  // Build Yahoo ticker from symbol + exchange suffix
-  const suf = {
-    'Euronext Paris': '.PA', 'Euronext Brussels': '.BR', 'XETRA': '.DE',
-    'Stockholm': '.ST', 'Hong Kong': '.HK', 'London': '.L',
-    'NSE': '.NS', 'Oslo': '.OL', 'NASDAQ': '', 'NYSE': ''
-  }[c.exch];
-  if(suf === undefined) return out;
-  let base = c.symbol;
-  if(c.exch === 'Hong Kong') base = base.padStart(4,'0');
-  const yTicker = base + suf;
+  if(!c.symbol) return out;
+  let yTicker;
+  // If the symbol already contains a suffix (a dot, e.g. "MC.PA", "1378.HK"),
+  // use it exactly as typed — this is what manually-added companies should do.
+  if(c.symbol.includes('.')){
+    yTicker = c.symbol.trim();
+  } else if(c.exch){
+    // Otherwise build the Yahoo ticker from the known exchange of a seed company.
+    const suf = {
+      'Euronext Paris': '.PA', 'Euronext Brussels': '.BR', 'XETRA': '.DE',
+      'Stockholm': '.ST', 'Hong Kong': '.HK', 'London': '.L',
+      'NSE': '.NS', 'Oslo': '.OL', 'NASDAQ': '', 'NYSE': ''
+    }[c.exch];
+    if(suf === undefined) return out;
+    let base = c.symbol;
+    if(c.exch === 'Hong Kong') base = base.padStart(4,'0');
+    yTicker = base + suf;
+  } else {
+    // No suffix and no exchange: assume US ticker (works for AMZN, META, etc.)
+    yTicker = c.symbol.trim();
+  }
   try{
     const resp = await fetch(YAHOO_PROXY + '?symbol=' + encodeURIComponent(yTicker));
     if(!resp.ok) return out;
