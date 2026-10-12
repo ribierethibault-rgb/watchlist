@@ -18,6 +18,22 @@
   td.api-filled{ box-shadow: inset 0 0 0 2px #B5453D; border-radius:3px; }
   .legend-api{ display:inline-flex; align-items:center; gap:6px; }
   .legend-api .box{ width:16px; height:12px; border-radius:2px; box-shadow: inset 0 0 0 2px #B5453D; }
+  details.guide{ background:#FCFAF4; border:1px solid #DAD2BE; border-radius:3px; margin-bottom:22px; }
+  details.guide > summary{ cursor:pointer; padding:14px 18px; font-weight:700; font-family:'Source Serif 4',serif; font-size:1.05rem; color:#22303E; list-style:none; display:flex; align-items:center; justify-content:space-between; }
+  details.guide > summary::-webkit-details-marker{ display:none; }
+  details.guide > summary::after{ content:'▸ Afficher'; font-family:'Inter',sans-serif; font-size:0.78rem; font-weight:600; color:#9C7A2E; }
+  details.guide[open] > summary::after{ content:'▾ Masquer'; }
+  .guide-body{ padding:4px 22px 22px; font-size:0.9rem; line-height:1.6; color:#22303E; }
+  .guide-body h3{ font-family:'Source Serif 4',serif; font-size:1.05rem; margin:22px 0 8px; color:#22303E; border-bottom:1px solid #DAD2BE; padding-bottom:5px; }
+  .guide-body h3:first-child{ margin-top:6px; }
+  .guide-body p{ margin:0 0 10px; }
+  .guide-body ul{ margin:0 0 12px; padding-left:20px; }
+  .guide-body li{ margin-bottom:6px; }
+  .guide-body code{ background:#EFE3C2; padding:1px 5px; border-radius:2px; font-family:'IBM Plex Mono',monospace; font-size:0.82rem; }
+  .guide-body .warn-txt{ color:#B5453D; font-weight:600; }
+  .guide-body table.wtbl{ border-collapse:collapse; width:100%; margin:0 0 14px; font-size:0.83rem; }
+  .guide-body table.wtbl th, .guide-body table.wtbl td{ border:1px solid #DAD2BE; padding:6px 9px; text-align:left; vertical-align:top; }
+  .guide-body table.wtbl th{ background:#F0E9DC; font-weight:600; }
   :root{
     --paper: #F5F1E7;
     --panel: #FCFAF4;
@@ -427,6 +443,77 @@
   </header>
 
   <div id="connBanner" class="conn-banner warn"><span class="dot"></span><span id="connText">Connexion à la base de données…</span></div>
+
+  <details class="guide">
+    <summary>📖 Mode d'emploi — à lire avant de toucher au tableau</summary>
+    <div class="guide-body">
+
+      <h3>1. À quoi sert cet outil ?</h3>
+      <p>C'est une watchlist collaborative pour repérer des entreprises <b>potentiellement sous-valorisées</b> (approche "value investing"). Chaque entreprise est notée sur 10 à partir de 10 indicateurs financiers. Une note élevée = l'entreprise cumule les signaux d'une décote solide. <span class="warn-txt">Une note élevée n'est pas un conseil d'achat</span> : c'est un point de départ pour creuser, pas une conclusion.</p>
+
+      <h3>2. C'est partagé et synchronisé</h3>
+      <p>Nous sommes tous sur la <b>même base de données</b>. Si tu modifies, ajoutes ou supprimes une ligne, <b>tout le monde le voit en temps réel</b>, et c'est définitif. Il n'y a pas de "ma version" et "ta version" : il y a une seule liste commune.</p>
+      <ul>
+        <li>Mets ton <b>prénom</b> dans la case en haut : tes modifications seront identifiées dans la colonne "Par".</li>
+        <li>Le bandeau vert "Connecté" en haut confirme que la synchro marche. S'il est rouge, recharge la page.</li>
+        <li><span class="warn-txt">Réfléchis avant de supprimer</span> : une ligne supprimée disparaît pour tout le groupe, sans corbeille.</li>
+      </ul>
+
+      <h3>3. Les deux tableaux (onglets)</h3>
+      <p>Il y a plusieurs tableaux, accessibles par les onglets. Chacun est une liste indépendante. Tu peux en créer un nouveau ("+ Nouveau tableau"), le renommer, ou en supprimer un. Les boutons d'action (ajouter, prix auto…) agissent <b>uniquement sur l'onglet affiché</b>.</p>
+
+      <h3>4. Comment lire les indicateurs</h3>
+      <table class="wtbl">
+        <tr><th>Indicateur</th><th>Ce qu'il mesure</th><th>Favorable</th><th>Défavorable</th></tr>
+        <tr><td><b>PER</b></td><td>Prix / bénéfice. Combien d'années de bénéfices pour "payer" l'action.</td><td>&lt; 12</td><td>&gt; 25</td></tr>
+        <tr><td><b>P/B</b></td><td>Prix / valeur comptable (actifs nets).</td><td>&lt; 1</td><td>&gt; 3</td></tr>
+        <tr><td><b>PEG</b></td><td>PER ajusté par la croissance attendue. Corrige le PER pour les boîtes qui croissent.</td><td>&lt; 1</td><td>&gt; 2</td></tr>
+        <tr><td><b>Dette / EBITDA</b></td><td>Années d'EBITDA pour rembourser la dette nette. Garde-fou anti-"piège".</td><td>&lt; 1</td><td>&gt; 4</td></tr>
+        <tr><td><b>Couv. intérêts</b></td><td>Capacité à payer les intérêts de la dette avec le résultat d'exploitation.</td><td>&gt; 8</td><td>&lt; 2</td></tr>
+        <tr><td><b>ROE</b></td><td>Rentabilité des capitaux propres (argent des actionnaires).</td><td>&gt; 15%</td><td>&lt; 5%</td></tr>
+        <tr><td><b>FCF Yield</b></td><td>Cash réellement généré / capitalisation. Difficile à manipuler.</td><td>&gt; 8%</td><td>&lt; 1%</td></tr>
+        <tr><td><b>Div. Yield</b></td><td>Rendement du dividende. <b>Pénalité seulement</b> (voir note ci-dessous).</td><td>neutre ≤ 8%</td><td>suspect &gt; 15%</td></tr>
+        <tr><td><b>Payout</b></td><td>Part du bénéfice versée en dividende. <b>Pénalité seulement</b>.</td><td>neutre ≤ 60%</td><td>suspect &gt; 100%</td></tr>
+        <tr><td><b>F-Score</b></td><td>Score Piotroski /9 : repère les "fausses décotes" (entreprises en déclin).</td><td>&gt; 7</td><td>&lt; 3</td></tr>
+      </table>
+      <p>Chaque case a un <b>code couleur</b> du rouge (cher/fragile) au vert (décoté/solide) selon ces seuils.</p>
+
+      <h3>5. Comment la NOTE /10 est calculée</h3>
+      <p>Chaque indicateur reçoit un score de 0 (défavorable) à 1 (favorable), calculé par rapport aux seuils ci-dessus. La note finale est une <b>moyenne pondérée</b> de ces scores, ramenée sur 10. Tous les indicateurs ne pèsent pas pareil :</p>
+      <ul>
+        <li><b>Poids forts (15% chacun)</b> : PER, FCF Yield, F-Score — les plus prédictifs d'une vraie décote.</li>
+        <li><b>Poids moyens (10% chacun)</b> : ROE, Dette/EBITDA, Couverture d'intérêts.</li>
+        <li><b>Poids faibles</b> : P/B (8%), PEG (7%).</li>
+        <li><b>Dividendes (5% chacun, en pénalité only)</b> : un rendement raisonnable n'apporte <b>aucun bonus</b> ; seul un rendement ou un payout anormalement élevé <b>fait baisser</b> la note (signal "trop beau pour être vrai").</li>
+      </ul>
+      <p><b>Cases vides :</b> un indicateur non renseigné est simplement <b>ignoré</b> (pas compté comme 0). La note se calcule sur les indicateurs présents. Donc moins une entreprise a de données, moins sa note est fiable.</p>
+
+      <h3>6. Les cases encadrées en ROUGE</h3>
+      <p>Une case <span class="warn-txt">encadrée en rouge</span> a été remplie <b>automatiquement par l'API (Yahoo Finance)</b> via le bouton "↻ Prix auto". Les cases sans encadrement sont saisies <b>à la main</b>. Si tu modifies une case rouge à la main, elle perd son encadrement (elle devient manuelle).</p>
+
+      <h3>7. Le bouton "↻ Prix auto"</h3>
+      <p>Il interroge Yahoo Finance pour remplir automatiquement prix, PER, P/B, PEG, ROE, dividende, payout, dette/EBITDA et FCF Yield sur <b>toutes les entreprises de l'onglet affiché</b>. Il <b>écrase</b> les valeurs existantes par les données Yahoo. Ça prend quelques secondes. Un bilan s'affiche à la fin.</p>
+      <p><span class="warn-txt">Ce que l'API ne remplit jamais</span> : le <b>F-Score</b>, la <b>Couverture d'intérêts</b> (parfois), et le PEG quand Yahoo ne l'a pas. Ces valeurs restent à saisir à la main. Le PER récupéré est le <b>prévisionnel (forward)</b>.</p>
+
+      <h3>8. Ajouter une entreprise (sans rien casser)</h3>
+      <ul>
+        <li>Clique "+ Ajouter une entreprise", tape son <b>nom</b>.</li>
+        <li>Renseigne son <b>Symbole</b> boursier (2ᵉ colonne) au bon format : actions US = <code>AMZN</code> ; Euronext Paris = <code>MC</code> ; etc. <b>Sans le bon symbole, le bouton Prix auto ignorera la ligne.</b></li>
+        <li>Clique "↻ Prix auto" pour remplir le reste. Complète F-Score et Couverture à la main si tu les as.</li>
+      </ul>
+
+      <h3>9. Trier le tableau</h3>
+      <p>Clique sur l'en-tête d'une colonne pour trier (1er clic = croissant, 2ᵉ = décroissant). Les cases vides vont toujours en bas. Trier par "Note" décroissante fait remonter les meilleures opportunités en haut.</p>
+
+      <h3>10. Limites à garder en tête</h3>
+      <ul>
+        <li>Les données chiffrées peuvent être <b>différées</b> ou imparfaites selon la source. Vérifie toujours sur ton courtier avant toute décision.</li>
+        <li>La note est un <b>outil de dégrossissage</b>, pas une vérité. Une boîte en difficulté peut afficher un PER bas (fausse décote) — d'où le F-Score.</li>
+        <li>Les prix sont surtout indicatifs : les <b>ratios</b> sont le cœur de l'analyse, pas le cours.</li>
+      </ul>
+
+    </div>
+  </details>
 
   <div class="who-row">
     <span>Ton prénom (affiché sur tes modifs) :</span>
@@ -1155,89 +1242,42 @@ document.querySelectorAll('thead th[data-sort-key]').forEach(th => {
   });
 });
 
-/* ===== AUTO PRICES / METRICS — Twelve Data (primary) + Finnhub (fallback) ===== */
-const TWELVEDATA_KEY = '2fbf09b2bdf245a6870debcc85c9b0df';
-const FINNHUB_KEY = 'db4db41r01qucqgmbilgdb4db41r01qucqgmbim0';
+/* ===== AUTO MÉTRIQUES — Proxy Yahoo Finance (Cloudflare Worker) ===== */
+const YAHOO_PROXY = 'https://yahoo-proxy.ribierethibault.workers.dev/';
 
-// Twelve Data exchange hints, mapped from each company's `exch` field.
-function tdExchange(exch){
-  const map = {
-    'Euronext Paris': 'Euronext',
-    'XETRA': 'XETRA',
-    'Euronext Brussels': 'Euronext',
-    'Stockholm': 'OMX',
-    'Hong Kong': 'HKEX',
-    'London': 'LSE',
-    'NSE': 'NSE',
-    'Oslo': 'OSE',
-    'NASDAQ': 'NASDAQ',
-    'NYSE': 'NYSE'
-  };
-  return map[exch] || '';
-}
-
-async function fetchTwelveData(c){
+async function fetchYahoo(c){
   const out = {};
-  const sym = c.symbol;
-  if(!sym) return out;
-  const exch = tdExchange(c.exch);
-  const exchParam = exch ? `&exchange=${encodeURIComponent(exch)}` : '';
+  if(!c.symbol || !c.exch) return out;
+  // Build Yahoo ticker from symbol + exchange suffix
+  const suf = {
+    'Euronext Paris': '.PA', 'Euronext Brussels': '.BR', 'XETRA': '.DE',
+    'Stockholm': '.ST', 'Hong Kong': '.HK', 'London': '.L',
+    'NSE': '.NS', 'Oslo': '.OL', 'NASDAQ': '', 'NYSE': ''
+  }[c.exch];
+  if(suf === undefined) return out;
+  let base = c.symbol;
+  if(c.exch === 'Hong Kong') base = base.padStart(4,'0');
+  const yTicker = base + suf;
   try{
-    // Price
-    const q = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(sym)}${exchParam}&apikey=${TWELVEDATA_KEY}`);
-    if(q.ok){
-      const qd = await q.json();
-      if(qd && qd.price && !isNaN(parseFloat(qd.price))) out.price = Math.round(parseFloat(qd.price) * 100) / 100;
+    const resp = await fetch(YAHOO_PROXY + '?symbol=' + encodeURIComponent(yTicker));
+    if(!resp.ok) return out;
+    const d = await resp.json();
+    if(!d || d.error) return out;
+    if(typeof d.price === 'number' && d.price > 0) out.price = Math.round(d.price*100)/100;
+    if(d.currency) out.currency = d.currency;
+    if(typeof d.per === 'number' && d.per > 0) out.per = Math.round(d.per*10)/10;
+    if(typeof d.pb === 'number' && d.pb > 0) out.pb = Math.round(d.pb*100)/100;
+    if(typeof d.peg === 'number' && d.peg > 0) out.peg = Math.round(d.peg*100)/100;
+    if(typeof d.roe === 'number') out.roe = Math.round((Math.abs(d.roe) <= 3 ? d.roe*100 : d.roe)*10)/10;
+    if(typeof d.divyield === 'number') out.divyield = Math.round((d.divyield <= 1 ? d.divyield*100 : d.divyield)*100)/100;
+    if(typeof d.payout === 'number') out.payout = Math.round((d.payout <= 1 ? d.payout*100 : d.payout)*10)/10;
+    // Dette nette / EBITDA, calculé depuis totalDebt et ebitda
+    if(typeof d.totalDebt === 'number' && typeof d.ebitda === 'number' && d.ebitda > 0){
+      out.debt = Math.round((d.totalDebt / d.ebitda)*100)/100;
     }
-  } catch(e){ /* ignore */ }
-  try{
-    // Statistics: PER, P/B, ROE, dividend yield
-    const s = await fetch(`https://api.twelvedata.com/statistics?symbol=${encodeURIComponent(sym)}${exchParam}&apikey=${TWELVEDATA_KEY}`);
-    if(s.ok){
-      const sd = await s.json();
-      const st = sd && sd.statistics ? sd.statistics : {};
-      const val = st.valuations_metrics || {};
-      const fin = st.financials || {};
-      const divs = st.dividends_and_splits || {};
-      if(val.trailing_pe && !isNaN(+val.trailing_pe)) out.per = Math.round(+val.trailing_pe * 10) / 10;
-      else if(val.forward_pe && !isNaN(+val.forward_pe)) out.per = Math.round(+val.forward_pe * 10) / 10;
-      if(val.price_to_book_mrq && !isNaN(+val.price_to_book_mrq)) out.pb = Math.round(+val.price_to_book_mrq * 100) / 100;
-      const roe = fin.return_on_equity_ttm;
-      if(roe != null && !isNaN(+roe)) out.roe = Math.round((+roe <= 1 ? +roe*100 : +roe) * 10) / 10;
-      const dy = divs.forward_annual_dividend_yield ?? divs.trailing_annual_dividend_yield;
-      if(dy != null && !isNaN(+dy)) out.divyield = Math.round((+dy <= 1 ? +dy*100 : +dy) * 100) / 100;
-    }
-  } catch(e){ /* ignore */ }
-  return out;
-}
-
-async function fetchFinnhub(c){
-  const out = {};
-  const sym = c.symbol ? (c.exch && /Paris|Brussels/.test(c.exch) ? c.symbol + '.PA'
-            : c.exch === 'XETRA' ? c.symbol + '.DE'
-            : c.exch === 'Stockholm' ? c.symbol + '.ST'
-            : c.exch === 'Hong Kong' ? (c.symbol.padStart(4,'0') + '.HK')
-            : c.exch === 'London' ? c.symbol + '.L'
-            : c.exch === 'Oslo' ? c.symbol + '.OL'
-            : c.exch === 'NSE' ? c.symbol + '.NS'
-            : c.symbol) : '';
-  if(!sym) return out;
-  try{
-    const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FINNHUB_KEY}`);
-    if(q.ok){ const qd = await q.json(); if(qd && typeof qd.c === 'number' && qd.c > 0) out.price = Math.round(qd.c*100)/100; }
-  } catch(e){ /* ignore */ }
-  try{
-    const m = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${encodeURIComponent(sym)}&metric=all&token=${FINNHUB_KEY}`);
-    if(m.ok){
-      const md = await m.json(); const f = (md && md.metric) || {};
-      if(typeof f.peBasicExclExtraTTM === 'number') out.per = Math.round(f.peBasicExclExtraTTM*10)/10;
-      else if(typeof f.peTTM === 'number') out.per = Math.round(f.peTTM*10)/10;
-      if(typeof f.pbQuarterly === 'number') out.pb = Math.round(f.pbQuarterly*100)/100;
-      else if(typeof f.pbAnnual === 'number') out.pb = Math.round(f.pbAnnual*100)/100;
-      if(typeof f.roeTTM === 'number') out.roe = Math.round(f.roeTTM*10)/10;
-      else if(typeof f.roeRfy === 'number') out.roe = Math.round(f.roeRfy*10)/10;
-      if(typeof f.currentDividendYieldTTM === 'number') out.divyield = Math.round(f.currentDividendYieldTTM*100)/100;
-      else if(typeof f.dividendYieldIndicatedAnnual === 'number') out.divyield = Math.round(f.dividendYieldIndicatedAnnual*100)/100;
+    // FCF Yield = free cash flow / market cap, en %
+    if(typeof d.fcf === 'number' && typeof d.marketCap === 'number' && d.marketCap > 0){
+      out.fcf = Math.round((d.fcf / d.marketCap)*1000)/10;
     }
   } catch(e){ /* ignore */ }
   return out;
@@ -1258,14 +1298,7 @@ async function refreshPrices(){
   for(const c of targets){
     done++;
     status.textContent = `Mise à jour ${done}/${targets.length} (${c.name})…`;
-    // Twelve Data first
-    let data = await fetchTwelveData(c);
-    // Finnhub fills any field Twelve Data missed
-    const need = ['price','per','pb','roe','divyield'].some(k => data[k] === undefined);
-    if(need){
-      const fb = await fetchFinnhub(c);
-      for(const k of Object.keys(fb)){ if(data[k] === undefined) data[k] = fb[k]; }
-    }
+    const data = await fetchYahoo(c);
     const keys = Object.keys(data);
     if(keys.length > 0){
       Object.assign(c, data);
@@ -1275,9 +1308,7 @@ async function refreshPrices(){
     } else {
       failed++;
     }
-    // Twelve Data free tier = 8 req/min. We make up to 2 TD calls per company,
-    // so pace ~8s between companies to stay under the limit.
-    await new Promise(r => setTimeout(r, 8000));
+    await new Promise(r => setTimeout(r, 400));
   }
   companies = board.companies;
   refreshSortOrder();
@@ -1288,6 +1319,7 @@ async function refreshPrices(){
 }
 
 document.getElementById('refreshPricesBtn').addEventListener('click', refreshPrices);
+
 
 const whoInput = document.getElementById('whoInput');
 whoInput.value = getWho();
